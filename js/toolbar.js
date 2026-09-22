@@ -14,6 +14,7 @@ const KEYS = [
   { label: '▶',  action: 'run' },
 ];
 
+
 export function initToolbar({ code, onRun }) {
   const bar = document.getElementById('keybar');
 
@@ -46,14 +47,27 @@ export function initToolbar({ code, onRun }) {
   const vv = window.visualViewport;
   const fit = () => {
     if (!vv) return;
-    const kb = window.innerHeight - vv.height > 150;
     document.body.style.height = `${vv.height}px`;
     document.body.style.transform = `translateY(${vv.offsetTop}px)`;
-    document.body.classList.toggle('kb', kb && document.activeElement === code);
+    // show the bar whenever the editor has focus, regardless of any height guess
+    document.body.classList.toggle('kb', document.activeElement === code);
   };
+
   vv?.addEventListener('resize', fit);
   vv?.addEventListener('scroll', fit);
-  code.addEventListener('focus', fit);
+
+  code.addEventListener('focus', () => {
+    fit();
+    // keyboard animates in over ~300ms; re-fit as it settles
+    setTimeout(fit, 100);
+    setTimeout(fit, 350);
+  });
   code.addEventListener('blur', () => setTimeout(fit, 50));
+
+  // opening/closing a hint or solution reflows the page — re-fit if still editing
+  document.querySelectorAll('#question details').forEach(d =>
+    d.addEventListener('toggle', () => { if (document.activeElement === code) setTimeout(fit, 50); }));
+
   fit();
 }
+
