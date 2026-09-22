@@ -39,9 +39,13 @@ function normalizePack(data, fallbackName) {
   const exercises = top.exercises.map((raw, i) => {
     const ex = lower(raw);
     if (!ex.exercise) throw new Error(`exercise #${i + 1}: missing "exercise"`);
-    if (!ex.expect)   throw new Error(`exercise #${i + 1}: missing "expect"`);
-    return { ...ex, id: String(ex.id ?? i + 1), title: ex.title ?? `#${i + 1}`,
-             setup: normState(ex.setup), expect: normState(ex.expect) };
+    // "cases": [{ setup, expect }, ...]  or a single setup/expect
+    const cases = (ex.cases ?? [{ setup: ex.setup, expect: ex.expect }]).map(c => {
+      c = lower(c);
+      if (!c.expect) throw new Error(`exercise #${i + 1}: missing "expect"`);
+      return { setup: normState(c.setup), expect: normState(c.expect) };
+    });
+    return { ...ex, id: String(ex.id ?? i + 1), title: ex.title ?? `#${i + 1}`, cases };
   });
   return { name: top.pack ?? top.name ?? fallbackName, exercises };
 }
@@ -164,22 +168,30 @@ ui.code.addEventListener('keydown', e => {        // desktop comfort
 function run() {
   if (cur < 0) return;
   const { key, ex } = list[cur];
-  const r = runExercise(ui.code.value, ex);
-  const regs = r.changed.length ? '\n' + r.changed.map(([n, v]) => `${n}=${v}`).join('  ') : '';
+  const cases = ex.cases ?? [{ setup: ex.setup, expect: ex.expect }];   // older stored packs
+  let r, n = 0;
+  for (const c of cases) {
+    n++;
+    r = runExercise(ui.code.value, c);
+    if (!r.pass) break;
+  }
+  const tag = cases.length > 1 ? `case ${n}/${cases.length}: ` : '';
+  const regs = r.changed.length ? '\n' + r.changed.map(([nm, v]) => `${nm}=${v}`).join('  ') : '';
 
   if (r.errors.length) {
     const e = r.errors[0];
     errLine = e.line ?? 0; updateGutter();
     const more = r.errors.length > 1 ? `  (+${r.errors.length - 1} more)` : '';
-    setResult('err', `${e.line ? `line ${e.line}: ` : ''}${e.msg}${more}`);
+    setResult('err', `${tag}${e.line ? `line ${e.line}: ` : ''}${e.msg}${more}`);
   } else if (r.pass) {
     store.setSolved(key);
     ui.pick.options[cur].text = label(list[cur]);
-    setResult('ok', '✓ Correct' + regs);
+    setResult('ok', `✓ Correct${cases.length > 1 ? ` (all ${cases.length} cases)` : ''}` + regs);
   } else {
-    setResult('bad', '✗ ' + r.diffs.map(d => `${d.where} want ${d.want} got ${d.got}`).join('  ') + regs);
+    setResult('bad', `✗ ${tag}` + r.diffs.map(d => `${d.where} want ${d.want} got ${d.got}`).join('  ') + regs);
   }
 }
+
 
 /* ---------- menu ---------- */
 
