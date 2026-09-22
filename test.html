@@ -1,0 +1,70 @@
+<!-- /test.html -->
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>asm core tests</title>
+<pre id="out" style="white-space:pre-wrap"></pre>
+<script type="module">
+import { runExercise } from './js/cpu.js';
+
+const tests = [
+  { name: 'li small / large / negative', src: `li $t0, 5\nli $t1, 0x12345678\nli $t2, -1`,
+    expect: { regs: { t0: 5, t1: '0x12345678', t2: '0xFFFFFFFF' } } },
+  { name: 'loop sum 5..1', src: `
+  li $t0, 5
+  li $v0, 0
+loop:
+  addu $v0, $v0, $t0
+  addiu $t0, $t0, -1
+  bnez $t0, loop
+  nop`, expect: { regs: { v0: 15 } } },
+  { name: 'delay slot executes', src: `
+  li $v0, 1
+  b skip
+  li $v0, 2     # delay slot
+  li $v0, 3
+skip:`, expect: { regs: { v0: 2 } } },
+  { name: 'beql not taken skips slot', src: `
+  li $v0, 1
+  beql $zero, $v0, never
+  li $v0, 2     # skipped
+never:`, expect: { regs: { v0: 1 } } },
+  { name: 'CLPS2C abs load (hi adjust)', src: `lw $v0, 0x003E8888`,
+    setup: { mem: { '0x003E8888': 100 } }, expect: { regs: { v0: 100 } } },
+  { name: 'CLPS2C abs store', src: `li $t0, 0x3F800000\nsw $t0, 0x003E8888`,
+    expect: { mem: { '0x003E8888': '0x3F800000' } } },
+  { name: 'mult hi/lo', src: `li $t0, 0x10000\nmult $t0, $t0\nmfhi $v0\nmflo $v1`,
+    expect: { regs: { v0: 1, v1: 0 } } },
+  { name: 'jal / jr', src: `
+  jal func
+  nop
+  j end
+  nop
+func:
+  li $v0, 42
+  jr $ra
+  nop
+end:`, expect: { regs: { v0: 42 } } },
+  { name: 'lb sign-extends, lbu not', src: `lb $v0, 0($a0)\nlbu $v1, 0($a0)`,
+    setup: { regs: { a0: '0x00500000' }, mem: { '0x00500000': '0xFF' } },
+    expect: { regs: { v0: '0xFFFFFFFF', v1: '0xFF' } } },
+  { name: 'error: addiu imm too big', src: `addiu $t0, $zero, 0xFFFF`, expectError: true },
+  { name: 'error: delay slot past end', src: `
+  li $a0, 2
+loop:
+  addiu $a0, $a0, -1
+  bnez $a0, loop`, expectError: true },
+];
+
+const out = document.getElementById('out');
+let ok = 0;
+for (const t of tests) {
+  const r = runExercise(t.src, { setup: t.setup, expect: t.expect ?? {} });
+  const pass = t.expectError ? r.errors.length > 0 : r.pass;
+  if (pass) ok++;
+  const info = r.errors.length ? r.errors : r.diffs;
+  out.textContent += `${pass ? 'PASS' : 'FAIL'}  ${t.name}` +
+    (info.length ? `\n      ${JSON.stringify(info)}` : '') + '\n';
+}
+out.textContent += `\n${ok}/${tests.length} passed`;
+</script>
