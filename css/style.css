@@ -1,0 +1,81 @@
+/* /css/style.css */
+:root {
+  --bg:#111; --panel:#1b1b1b; --line:#2a2a2a; --fg:#ddd; --dim:#888;
+  --ok:#4c9; --bad:#e66; --acc:#6af;
+  --mono: ui-monospace, Menlo, monospace;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+html { height: 100%; overflow: hidden; background: var(--bg); }
+body { position: fixed; top: 0; left: 0; right: 0; margin: 0;
+  display: flex; flex-direction: column; height: 100dvh; overflow: hidden;
+  background: var(--bg); color: var(--fg);
+  font: 15px/1.4 -apple-system, system-ui, sans-serif;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right)
+           env(safe-area-inset-bottom) env(safe-area-inset-left); }
+
+button { font: inherit; color: var(--fg); background: var(--panel);
+  border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; }
+button:disabled { opacity: .4; }
+
+/* header */
+header { display: flex; gap: 6px; padding: 6px; border-bottom: 1px solid var(--line); flex-shrink: 0; }
+header select { flex: 1; min-width: 0; font-size: 16px; color: var(--fg); background: var(--panel);
+  border: 1px solid var(--line); border-radius: 8px; padding: 4px 6px; }
+
+/* question */
+#question { padding: 8px 10px; max-height: 38%; overflow: auto; flex-shrink: 0;
+  border-bottom: 1px solid var(--line); }
+#question h2 { margin: 0 0 4px; font-size: 16px; }
+#question p { margin: 0 0 6px; white-space: pre-wrap; }
+details summary { color: var(--acc); cursor: pointer; }
+#hint, #solution { margin: 4px 0; font: 14px/1.4 var(--mono); white-space: pre-wrap; color: var(--dim); }
+
+/* run + result */
+#bar { display: flex; gap: 8px; align-items: center; padding: 6px; flex-shrink: 0;
+  border-bottom: 1px solid var(--line); }
+#run { background: #1d3527; border-color: #2a6; font-weight: 600; flex-shrink: 0; }
+#result { flex: 1; min-width: 0; max-height: 3.2em; overflow: auto; white-space: pre-wrap;
+  font: 12px/1.35 var(--mono); color: var(--dim); }
+#result.ok  { color: var(--ok); }
+#result.bad, #result.err { color: var(--bad); }
+
+/* editor (16px everywhere = no iOS focus zoom) */
+#editor { flex: 1; display: flex; min-height: 0; background: #0c0c0c; }
+#gutter, #code { font: 16px/1.5 var(--mono); padding-top: 8px; padding-bottom: 8px; }
+#gutter { margin: 0; padding-left: 6px; padding-right: 6px; min-width: 2.6em; text-align: right;
+  color: #555; overflow: hidden; user-select: none; border-right: 1px solid var(--line); }
+#gutter b { color: var(--bad); }
+#code { flex: 1; min-width: 0; resize: none; border: 0; outline: 0; background: transparent;
+  color: var(--fg); padding-left: 8px; padding-right: 8px; white-space: pre; overflow: auto; tab-size: 4; }
+
+/* keyboard mode: hide nav + hint/solution, shrink question, show key bar */
+body.kb { padding-bottom: 0; }
+body.kb header, body.kb #question details { display: none; }
+body.kb #question { max-height: 24%; }
+
+#keybar { display: none; gap: 4px; padding: 4px; flex-shrink: 0;
+  background: var(--panel); border-top: 1px solid var(--line); }
+body.kb #keybar { display: flex; }
+#keybar button { flex: 1; min-width: 0; padding: 8px 0; font: 17px var(--mono);
+  touch-action: manipulation; -webkit-user-select: none; user-select: none;
+  -webkit-tap-highlight-color: transparent; }
+#keybar .run { background: #1d3527; border-color: #2a6; }
+
+/* menu */
+dialog { background: var(--panel); color: var(--fg); border: 1px solid var(--line);
+  border-radius: 12px; width: min(92vw, 480px); max-height: 85dvh; overflow: auto; }
+dialog::backdrop { background: #000a; }
+dialog h3 { margin: 14px 0 8px; }
+dialog h3:first-child { margin-top: 0; }
+#packList { list-style: none; padding: 0; margin: 0 0 6px; }
+#packList li { display: flex; justify-content: space-between; align-items: center;
+  padding: 4px 0; border-bottom: 1px solid var(--line); }
+#packList .dim, #stats { color: var(--dim); }
+#stats { margin: 0 0 8px; font-size: 13px; }
+#paste { width: 100%; height: 110px; margin: 8px 0; font: 16px var(--mono);
+  background: #0c0c0c; color: var(--fg); border: 1px solid var(--line); border-radius: 8px; }
+.wide { width: 100%; }
+.row { display: flex; gap: 8px; justify-content: space-between; }
+.danger { color: var(--bad); }
